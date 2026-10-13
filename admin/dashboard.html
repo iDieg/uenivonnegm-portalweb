@@ -241,5 +241,42 @@
 
   <!-- Scripts -->
   <script type="module" src="../js/admin.js"></script>
+
+  <!-- Modal de Confirmación de Eliminación con Animación -->
+  <div id="modal-eliminar" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 transition-all duration-300 opacity-0 pointer-events-none">
+    <!-- Fondo oscuro con efecto blur -->
+    <div id="modal-eliminar-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+
+    <!-- Tarjeta del Modal con animación de escala -->
+    <div id="modal-eliminar-card" class="relative bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 z-10 transform scale-95 transition-all duration-300 space-y-4">
+      
+      <!-- Icono de advertencia animado -->
+      <div class="w-12 h-12 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mx-auto shadow-inner">
+        <svg class="w-6 h-6 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      </div>
+
+      <!-- Textos informativos -->
+      <div class="text-center space-y-1">
+        <h3 id="modal-eliminar-titulo" class="text-base font-bold text-slate-900">¿Eliminar publicación?</h3>
+        <p id="modal-eliminar-desc" class="text-xs text-slate-500 leading-relaxed">
+          Esta acción no se puede deshacer. Se borrará el registro y la imagen asociada en el servidor de forma permanente.
+        </p>
+      </div>
+
+      <!-- Botones de Acción -->
+      <div class="flex gap-3 pt-2">
+        <button id="btn-cancelar-eliminar" type="button" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-2.5 px-4 rounded-xl transition">
+          Cancelar
+        </button>
+        <button id="btn-confirmar-eliminar" type="button" class="flex-1 bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition shadow-md shadow-red-600/20 flex items-center justify-center gap-1.5">
+          <span id="txt-confirmar-eliminar">Eliminar</span>
+          <div id="spin-confirmar-eliminar" class="hidden w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+        </button>
+      </div>
+
+    </div>
+  </div>
 </body>
 </html>

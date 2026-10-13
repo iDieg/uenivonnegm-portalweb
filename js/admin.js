@@ -4,12 +4,12 @@ import { cerrarSesion, verificarSesionProtegida } from './auth.js';
 
 let listaComunicadosCache = [];
 let listaBitacoraCache = [];
+let accionConfirmarEliminacion = null;
 
 // ==========================================
-// 1. UTILIDADES Y OPTIMIZACIÓN DE ESPACIO
+// 1. UTILIDADES, TOAST Y MODAL DE CONFIRMACIÓN
 // ==========================================
 
-// Notificaciones flotantes tipo Toast
 function mostrarToast(tipo, mensaje) {
   const toast = document.getElementById('toast');
   const icon = document.getElementById('toast-icon');
@@ -33,6 +33,48 @@ function mostrarToast(tipo, mensaje) {
   setTimeout(() => {
     toast.classList.add('hidden');
   }, 4000);
+}
+
+// Modal Animado de Confirmación (Reemplazo de alert/confirm)
+function abrirModalEliminar(titulo, descripcion, callbackEliminar) {
+  const modal = document.getElementById('modal-eliminar');
+  const card = document.getElementById('modal-eliminar-card');
+  const txtTitulo = document.getElementById('modal-eliminar-titulo');
+  const txtDesc = document.getElementById('modal-eliminar-desc');
+
+  txtTitulo.textContent = titulo;
+  txtDesc.textContent = descripcion;
+  accionConfirmarEliminacion = callbackEliminar;
+
+  modal.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
+  modal.classList.add('opacity-100', 'pointer-events-auto');
+
+  setTimeout(() => {
+    card.classList.remove('scale-95');
+    card.classList.add('scale-100');
+  }, 10);
+}
+
+function cerrarModalEliminar() {
+  const modal = document.getElementById('modal-eliminar');
+  const card = document.getElementById('modal-eliminar-card');
+
+  card.classList.remove('scale-100');
+  card.classList.add('scale-95');
+
+  modal.classList.remove('opacity-100', 'pointer-events-auto');
+  modal.classList.add('opacity-0', 'pointer-events-none');
+
+  setTimeout(() => {
+    modal.classList.add('hidden');
+    accionConfirmarEliminacion = null;
+    const spinner = document.getElementById('spin-confirmar-eliminar');
+    const txt = document.getElementById('txt-confirmar-eliminar');
+    const btn = document.getElementById('btn-confirmar-eliminar');
+    if (spinner) spinner.classList.add('hidden');
+    if (txt) txt.textContent = 'Eliminar';
+    if (btn) btn.disabled = false;
+  }, 250);
 }
 
 // Reducción de peso y resolución en el cliente antes de subir a Supabase
@@ -204,7 +246,14 @@ function renderizarListaComunicados(lista) {
   });
 
   document.querySelectorAll('.btn-del-comunicado').forEach(btn => {
-    btn.addEventListener('click', () => eliminarComunicado(btn.getAttribute('data-id')));
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-id');
+      abrirModalEliminar(
+        '¿Eliminar comunicado oficial?',
+        'Esta acción retirará el aviso de la cartelera pública y liberará el espacio de almacenamiento.',
+        () => ejecutarEliminarComunicado(id)
+      );
+    });
   });
 }
 
@@ -267,10 +316,8 @@ async function guardarComunicado(e) {
     btnSpinner.classList.remove('hidden');
     btnText.textContent = 'Procesando...';
 
-    // Subir imagen optimizada si se seleccionó archivo
     if (fileInput.files.length > 0) {
       const nuevaUrl = await subirImagen(fileInput.files[0]);
-      // Si ya tenía imagen previa en modo edición, eliminar la antigua del Storage
       if (id && imagenUrlActual) {
         await eliminarArchivoDeStorage(imagenUrlActual);
       }
@@ -307,9 +354,7 @@ async function guardarComunicado(e) {
   }
 }
 
-async function eliminarComunicado(id) {
-  if (!confirm('¿Confirma que desea eliminar este comunicado oficial?')) return;
-
+async function ejecutarEliminarComunicado(id) {
   try {
     const item = listaComunicadosCache.find(c => c.id === id);
 
@@ -320,9 +365,11 @@ async function eliminarComunicado(id) {
       await eliminarArchivoDeStorage(item.imagen_url);
     }
 
+    cerrarModalEliminar();
     mostrarToast('exito', 'Comunicado e imagen eliminados.');
     cargarComunicados();
   } catch (err) {
+    cerrarModalEliminar();
     mostrarToast('error', err.message || 'No se pudo eliminar el comunicado.');
   }
 }
@@ -399,7 +446,14 @@ function renderizarListaBitacora(lista) {
   });
 
   document.querySelectorAll('.btn-del-bitacora').forEach(btn => {
-    btn.addEventListener('click', () => eliminarBitacora(btn.getAttribute('data-id')));
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-id');
+      abrirModalEliminar(
+        '¿Eliminar nota de la bitácora?',
+        'Esta acción borrará la crónica institucional y la fotografía alojada en la nube.',
+        () => ejecutarEliminarBitacora(id)
+      );
+    });
   });
 }
 
@@ -501,9 +555,7 @@ async function guardarBitacora(e) {
   }
 }
 
-async function eliminarBitacora(id) {
-  if (!confirm('¿Confirma que desea eliminar esta nota de la bitácora escolar?')) return;
-
+async function ejecutarEliminarBitacora(id) {
   try {
     const item = listaBitacoraCache.find(b => b.id === id);
 
@@ -514,9 +566,11 @@ async function eliminarBitacora(id) {
       await eliminarArchivoDeStorage(item.imagen_url);
     }
 
+    cerrarModalEliminar();
     mostrarToast('exito', 'Nota e imagen eliminadas.');
     cargarBitacora();
   } catch (err) {
+    cerrarModalEliminar();
     mostrarToast('error', err.message || 'No se pudo eliminar la nota.');
   }
 }
@@ -526,7 +580,6 @@ async function eliminarBitacora(id) {
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // Verificación de credenciales activas
   const usuario = await verificarSesionProtegida();
   if (!usuario) return;
 
@@ -556,7 +609,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     tabComunicadosBtn.className = 'tab-btn pb-3 px-3 text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2 transition font-bold';
   });
 
-  // Previsualización y descarte de imágenes en formularios
+  // Previsualización de imágenes
   const fileComunicado = document.getElementById('comunicado-file');
   const previewContainerCom = document.getElementById('comunicado-preview-container');
   const previewCom = document.getElementById('comunicado-preview');
@@ -591,7 +644,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     previewContainerBit.classList.add('hidden');
   });
 
-  // Eventos de formularios y botones
+  // Eventos del Modal de Eliminación
+  document.getElementById('btn-cancelar-eliminar').addEventListener('click', cerrarModalEliminar);
+  document.getElementById('modal-eliminar-backdrop').addEventListener('click', cerrarModalEliminar);
+  
+  document.getElementById('btn-confirmar-eliminar').addEventListener('click', async () => {
+    if (typeof accionConfirmarEliminacion === 'function') {
+      const btn = document.getElementById('btn-confirmar-eliminar');
+      const spinner = document.getElementById('spin-confirmar-eliminar');
+      const txt = document.getElementById('txt-confirmar-eliminar');
+      btn.disabled = true;
+      spinner.classList.remove('hidden');
+      txt.textContent = 'Borrando...';
+      await accionConfirmarEliminacion();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    const modal = document.getElementById('modal-eliminar');
+    if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
+      cerrarModalEliminar();
+    }
+  });
+
+  // Formularios y botones
   document.getElementById('form-comunicado').addEventListener('submit', guardarComunicado);
   document.getElementById('cancel-edit-comunicado').addEventListener('click', cancelarEdicionComunicado);
   document.getElementById('btn-refresh-comunicados').addEventListener('click', cargarComunicados);
@@ -602,7 +678,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('btn-logout').addEventListener('click', cerrarSesion);
 
-  // Sincronización inicial
+  // Carga inicial
   cargarComunicados();
   cargarBitacora();
 });
