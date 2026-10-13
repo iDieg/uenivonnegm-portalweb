@@ -3,7 +3,7 @@ import { supabase } from './config.js';
 
 let todosLosComunicados = [];
 
-// Elementos de la modal
+// Elementos de la modal de detalle
 const modal = document.getElementById('modal-comunicado');
 const modalImg = document.getElementById('modal-com-img');
 const modalBadge = document.getElementById('modal-com-badge');
@@ -13,7 +13,112 @@ const modalEmisor = document.getElementById('modal-com-emisor');
 const modalContenido = document.getElementById('modal-com-contenido');
 const modalClose = document.getElementById('modal-com-close');
 const modalCloseBtn = document.getElementById('modal-com-close-btn');
+const modalImgContainer = document.getElementById('modal-com-img-container');
 
+// Elementos del visor de inspección (Zoom Lightbox)
+const visorModal = document.getElementById('visor-imagen-modal');
+const visorImg = document.getElementById('visor-img');
+const visorCanvas = document.getElementById('visor-canvas');
+const visorZoomLevel = document.getElementById('visor-zoom-level');
+const visorBtnZoomIn = document.getElementById('visor-btn-zoom-in');
+const visorBtnZoomOut = document.getElementById('visor-btn-zoom-out');
+const visorBtnReset = document.getElementById('visor-btn-reset');
+const visorBtnClose = document.getElementById('visor-btn-close');
+
+// Estado interno del visor de zoom
+let zoomScale = 1;
+let posX = 0;
+let posY = 0;
+let isDragging = false;
+let startX = 0;
+let startY = 0;
+
+function actualizarTransformacionVisor() {
+  if (!visorImg) return;
+  visorImg.style.transform = `translate(${posX}px, ${posY}px) scale(${zoomScale})`;
+  if (visorZoomLevel) visorZoomLevel.textContent = `${Math.round(zoomScale * 100)}%`;
+}
+
+function abrirVisor(url) {
+  if (!visorModal || !visorImg || !url) return;
+  visorImg.src = url;
+  zoomScale = 1;
+  posX = 0;
+  posY = 0;
+  actualizarTransformacionVisor();
+  visorModal.classList.remove('hidden');
+}
+
+function cerrarVisor() {
+  if (!visorModal) return;
+  visorModal.classList.add('hidden');
+}
+
+function aplicarZoom(delta) {
+  zoomScale = Math.min(Math.max(0.5, zoomScale + delta), 4);
+  if (zoomScale <= 1) {
+    posX = 0;
+    posY = 0;
+  }
+  actualizarTransformacionVisor();
+}
+
+// Configurar interactividad del visor
+if (visorCanvas) {
+  visorCanvas.addEventListener('mousedown', (e) => {
+    if (zoomScale <= 1) return;
+    isDragging = true;
+    startX = e.clientX - posX;
+    startY = e.clientY - posY;
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    posX = e.clientX - startX;
+    posY = e.clientY - startY;
+    actualizarTransformacionVisor();
+  });
+
+  window.addEventListener('mouseup', () => { isDragging = false; });
+
+  // Zoom con rueda del ratón
+  visorCanvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    aplicarZoom(e.deltaY < 0 ? 0.2 : -0.2);
+  }, { passive: false });
+
+  // Doble clic para alternar zoom rápido
+  visorCanvas.addEventListener('dblclick', () => {
+    if (zoomScale > 1) {
+      zoomScale = 1;
+      posX = 0;
+      posY = 0;
+    } else {
+      zoomScale = 2.2;
+    }
+    actualizarTransformacionVisor();
+  });
+}
+
+if (visorBtnZoomIn) visorBtnZoomIn.addEventListener('click', () => aplicarZoom(0.3));
+if (visorBtnZoomOut) visorBtnZoomOut.addEventListener('click', () => aplicarZoom(-0.3));
+if (visorBtnReset) visorBtnReset.addEventListener('click', () => {
+  zoomScale = 1;
+  posX = 0;
+  posY = 0;
+  actualizarTransformacionVisor();
+});
+if (visorBtnClose) visorBtnClose.addEventListener('click', cerrarVisor);
+
+// Clic en la foto del comunicado abre la inspección a pantalla completa
+if (modalImgContainer) {
+  modalImgContainer.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (modalImg && modalImg.src) abrirVisor(modalImg.src);
+  });
+}
+
+// Carga y renderizado de la Cartelera
 async function cargarComunicados() {
   const grid = document.getElementById('comunicados-grid');
 
@@ -51,7 +156,6 @@ function renderizar(lista) {
   }
 
   lista.forEach(c => {
-    // Tarjeta con interacción completa
     const card = document.createElement('article');
     card.className = 'cursor-pointer bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition duration-200 flex flex-col justify-between group';
 
@@ -93,7 +197,6 @@ function renderizar(lista) {
       </div>
     `;
 
-    // Clic en cualquier parte del recuadro abre el detalle
     card.addEventListener('click', () => abrirModalComunicado(c));
     grid.appendChild(card);
   });
@@ -111,16 +214,16 @@ function abrirModalComunicado(c) {
   modalEmisor.textContent = c.emisor || 'Dirección del Plantel';
   modalContenido.textContent = c.contenido;
 
-  // Manejo de la foto
   if (c.imagen_url) {
     modalImg.src = c.imagen_url;
     modalImg.classList.remove('hidden');
+    if (modalImgContainer) modalImgContainer.classList.remove('hidden');
   } else {
     modalImg.src = '';
     modalImg.classList.add('hidden');
+    if (modalImgContainer) modalImgContainer.classList.add('hidden');
   }
 
-  // Estilo de badge
   modalBadge.textContent = c.categoria;
   modalBadge.className = 'text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full ' +
     (c.categoria === 'Primaria' ? 'bg-emerald-100 text-emerald-800' :
@@ -136,7 +239,6 @@ function cerrarModalComunicado() {
   document.body.classList.remove('overflow-hidden');
 }
 
-// Eventos de cierre modal
 if (modalClose) modalClose.addEventListener('click', cerrarModalComunicado);
 if (modalCloseBtn) modalCloseBtn.addEventListener('click', cerrarModalComunicado);
 
@@ -147,12 +249,16 @@ if (modal) {
 }
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
-    cerrarModalComunicado();
+  if (e.key === 'Escape') {
+    if (visorModal && !visorModal.classList.contains('hidden')) {
+      cerrarVisor();
+    } else if (modal && !modal.classList.contains('hidden')) {
+      cerrarModalComunicado();
+    }
   }
 });
 
-// Filtros por Categoría
+// Filtros
 document.querySelectorAll('.filter-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.filter-btn').forEach(b => {
@@ -161,12 +267,7 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.className = 'filter-btn bg-blue-900 text-white px-3 py-1.5 rounded font-medium';
 
     const cat = btn.getAttribute('data-cat');
-    if (cat === 'todos') {
-      renderizar(todosLosComunicados);
-    } else {
-      const filtrados = todosLosComunicados.filter(c => c.categoria === cat);
-      renderizar(filtrados);
-    }
+    renderizar(cat === 'todos' ? todosLosComunicados : todosLosComunicados.filter(c => c.categoria === cat));
   });
 });
 

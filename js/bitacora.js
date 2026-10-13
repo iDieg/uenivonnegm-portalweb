@@ -3,7 +3,7 @@ import { supabase } from './config.js';
 
 let notasBitacora = [];
 
-// Elementos de la interfaz y del modal
+// Elementos de la modal de detalle
 const grid = document.getElementById('bitacora-grid');
 const contador = document.getElementById('contador-entradas');
 const modal = document.getElementById('modal-detalle');
@@ -14,7 +14,108 @@ const modalResumen = document.getElementById('modal-resumen');
 const modalContenido = document.getElementById('modal-contenido');
 const modalClose = document.getElementById('modal-close');
 const modalCloseBtn = document.getElementById('modal-close-btn');
+const modalBitacoraImgContainer = document.getElementById('modal-bitacora-img-container');
 
+// Elementos del visor de inspección (Zoom Lightbox)
+const visorModal = document.getElementById('visor-imagen-modal');
+const visorImg = document.getElementById('visor-img');
+const visorCanvas = document.getElementById('visor-canvas');
+const visorZoomLevel = document.getElementById('visor-zoom-level');
+const visorBtnZoomIn = document.getElementById('visor-btn-zoom-in');
+const visorBtnZoomOut = document.getElementById('visor-btn-zoom-out');
+const visorBtnReset = document.getElementById('visor-btn-reset');
+const visorBtnClose = document.getElementById('visor-btn-close');
+
+let zoomScale = 1;
+let posX = 0;
+let posY = 0;
+let isDragging = false;
+let startX = 0;
+let startY = 0;
+
+function actualizarTransformacionVisor() {
+  if (!visorImg) return;
+  visorImg.style.transform = `translate(${posX}px, ${posY}px) scale(${zoomScale})`;
+  if (visorZoomLevel) visorZoomLevel.textContent = `${Math.round(zoomScale * 100)}%`;
+}
+
+function abrirVisor(url) {
+  if (!visorModal || !visorImg || !url) return;
+  visorImg.src = url;
+  zoomScale = 1;
+  posX = 0;
+  posY = 0;
+  actualizarTransformacionVisor();
+  visorModal.classList.remove('hidden');
+}
+
+function cerrarVisor() {
+  if (!visorModal) return;
+  visorModal.classList.add('hidden');
+}
+
+function aplicarZoom(delta) {
+  zoomScale = Math.min(Math.max(0.5, zoomScale + delta), 4);
+  if (zoomScale <= 1) {
+    posX = 0;
+    posY = 0;
+  }
+  actualizarTransformacionVisor();
+}
+
+if (visorCanvas) {
+  visorCanvas.addEventListener('mousedown', (e) => {
+    if (zoomScale <= 1) return;
+    isDragging = true;
+    startX = e.clientX - posX;
+    startY = e.clientY - posY;
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    posX = e.clientX - startX;
+    posY = e.clientY - startY;
+    actualizarTransformacionVisor();
+  });
+
+  window.addEventListener('mouseup', () => { isDragging = false; });
+
+  visorCanvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    aplicarZoom(e.deltaY < 0 ? 0.2 : -0.2);
+  }, { passive: false });
+
+  visorCanvas.addEventListener('dblclick', () => {
+    if (zoomScale > 1) {
+      zoomScale = 1;
+      posX = 0;
+      posY = 0;
+    } else {
+      zoomScale = 2.2;
+    }
+    actualizarTransformacionVisor();
+  });
+}
+
+if (visorBtnZoomIn) visorBtnZoomIn.addEventListener('click', () => aplicarZoom(0.3));
+if (visorBtnZoomOut) visorBtnZoomOut.addEventListener('click', () => aplicarZoom(-0.3));
+if (visorBtnReset) visorBtnReset.addEventListener('click', () => {
+  zoomScale = 1;
+  posX = 0;
+  posY = 0;
+  actualizarTransformacionVisor();
+});
+if (visorBtnClose) visorBtnClose.addEventListener('click', cerrarVisor);
+
+// Clic en la foto de la bitácora abre la inspección
+if (modalBitacoraImgContainer) {
+  modalBitacoraImgContainer.addEventListener('click', (e) => {
+    if (e.target.closest('#modal-close')) return;
+    if (modalImg && modalImg.src) abrirVisor(modalImg.src);
+  });
+}
+
+// Carga de la Bitácora
 async function cargarBitacora() {
   try {
     const { data, error } = await supabase
@@ -53,15 +154,12 @@ function renderizarBitacora(lista) {
   if (contador) contador.textContent = `${lista.length} ${lista.length === 1 ? 'Nota' : 'Notas'}`;
 
   lista.forEach(nota => {
-    // Tarjeta con interacción completa, cursor pointer y hover dinámico
     const card = document.createElement('article');
     card.className = 'cursor-pointer bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition duration-200 flex flex-col justify-between group';
 
     const fechaObj = nota.fecha_evento ? new Date(nota.fecha_evento + 'T00:00:00') : new Date(nota.created_at);
     const fechaFormateada = fechaObj.toLocaleDateString('es-VE', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
+      day: 'numeric', month: 'long', year: 'numeric'
     });
 
     card.innerHTML = `
@@ -89,7 +187,6 @@ function renderizarBitacora(lista) {
       </div>
     `;
 
-    // Presionar en cualquier área de la tarjeta despliega la modal
     card.addEventListener('click', () => abrirModal(nota.id));
     grid.appendChild(card);
   });
@@ -101,9 +198,7 @@ function abrirModal(id) {
 
   const fechaObj = nota.fecha_evento ? new Date(nota.fecha_evento + 'T00:00:00') : new Date(nota.created_at);
   const fechaFormateada = fechaObj.toLocaleDateString('es-VE', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
+    day: 'numeric', month: 'long', year: 'numeric'
   });
 
   modalImg.src = nota.imagen_url;
@@ -122,7 +217,6 @@ function cerrarModal() {
   document.body.classList.remove('overflow-hidden');
 }
 
-// Listeners de cierre del modal
 if (modalClose) modalClose.addEventListener('click', cerrarModal);
 if (modalCloseBtn) modalCloseBtn.addEventListener('click', cerrarModal);
 
@@ -133,8 +227,12 @@ if (modal) {
 }
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
-    cerrarModal();
+  if (e.key === 'Escape') {
+    if (visorModal && !visorModal.classList.contains('hidden')) {
+      cerrarVisor();
+    } else if (modal && !modal.classList.contains('hidden')) {
+      cerrarModal();
+    }
   }
 });
 
