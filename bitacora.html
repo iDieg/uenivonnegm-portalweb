@@ -17,8 +17,7 @@
         <span>República Bolivariana de Venezuela | MPPE | Zona Educativa del Estado Aragua</span>
       </div>
       <div class="flex items-center gap-4 text-[11px]">
-        <span>Jornada: Lunes a Viernes (2 Turnos)</span>
-        <a href="https://facebook.com" target="_blank" class="text-blue-300 hover:text-white underline">Canal de Facebook</a>
+        <a href="https://www.facebook.com/share/g/19oW1BWFyp/" target="_blank" class="text-blue-300 hover:text-white underline">Grupo de Facebook</a>
       </div>
     </div>
   </header>
@@ -104,6 +103,28 @@
     </div>
   </main>
 
+  <!-- Footer -->
+  <footer class="bg-slate-900 text-slate-400 text-xs py-8 px-4 mt-auto">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-left">
+      <div>
+        <p class="text-white font-bold text-sm">U.E.N. Ivonne González Marcano</p>
+        <p class="text-[11px] text-slate-400 mt-0.5">Memoria Histórica y Comunicación Institucional.</p>
+      </div>
+      <div class="text-[11px] text-slate-500">
+        Servicio Comunitario | Ingeniería de Sistemas UBA 2026
+      </div>
+    </div>
+  </footer>
+
+  <!-- Script para Menú Móvil -->
+  <script>
+    const menuBtn = document.getElementById('menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    menuBtn.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
+  </script>
+  <!-- Lógica de Supabase para Bitácora -->
+  <script type="module" src="js/bitacora.js"></script>
+  
   <!-- Modal para Visualización Detallada de la Entrada -->
   <div id="modal-detalle" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200 flex flex-col">
@@ -133,27 +154,5 @@
       </div>
     </div>
   </div>
-
-  <!-- Footer -->
-  <footer class="bg-slate-900 text-slate-400 text-xs py-8 px-4 mt-auto">
-    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-left">
-      <div>
-        <p class="text-white font-bold text-sm">U.E.N. Ivonne González Marcano</p>
-        <p class="text-[11px] text-slate-400 mt-0.5">Memoria Histórica y Comunicación Institucional.</p>
-      </div>
-      <div class="text-[11px] text-slate-500">
-        Servicio Comunitario | Ingeniería de Sistemas UBA 2026
-      </div>
-    </div>
-  </footer>
-
-  <!-- Script para Menú Móvil -->
-  <script>
-    const menuBtn = document.getElementById('menu-btn');
-    const mobileMenu = document.getElementById('mobile-menu');
-    menuBtn.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
-  </script>
-  <!-- Lógica de Supabase para Bitácora -->
-  <script type="module" src="js/bitacora.js"></script>
 </body>
 </html>
