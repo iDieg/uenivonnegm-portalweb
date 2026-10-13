@@ -125,27 +125,26 @@
   <!-- Lógica de Supabase para Bitácora -->
   <script type="module" src="js/bitacora.js"></script>
   
-  <!-- Modal para Visualización Detallada de la Entrada -->
+<!-- Modal para Visualización Detallada de la Entrada -->
   <div id="modal-detalle" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200 flex flex-col">
+      
+      <!-- Cabecera de la Imagen y Botón de Cierre -->
       <div class="relative">
         <div class="relative group cursor-zoom-in" id="modal-bitacora-img-container">
           <img id="modal-img" src="" alt="Fotografía de la nota" class="w-full h-64 object-cover">
           <span class="absolute bottom-2 right-2 bg-slate-900/80 text-white text-[10px] font-semibold px-2.5 py-1 rounded-md opacity-90 group-hover:opacity-100 transition shadow">
             🔍 Clic para pantalla completa / zoom
           </span>
-          <button id="modal-close" class="absolute top-3 right-3 bg-slate-900/70 hover:bg-slate-900 text-white rounded-full p-1.5 transition">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
         </div>
-        <button id="modal-close" class="absolute top-3 right-3 bg-slate-900/70 hover:bg-slate-900 text-white rounded-full p-1.5 transition">
+        <!-- Único botón de cierre superior con z-10 para asegurar prioridad de clic -->
+        <button id="modal-close" type="button" class="absolute top-3 right-3 bg-slate-900/80 hover:bg-slate-900 text-white rounded-full p-2 transition z-10 shadow-md">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
           </svg>
         </button>
       </div>
+
       <div class="p-6 space-y-4">
         <div class="flex items-center gap-3">
           <span class="bg-amber-100 text-amber-900 text-xs font-bold px-2.5 py-0.5 rounded-full uppercase">
@@ -165,19 +164,19 @@
     </div>
   </div>
 
-<!-- Modal Visor de Imagen con Zoom e Inspección (Lightbox 100% Responsive) -->
+  <!-- Modal Visor de Imagen con Zoom e Inspección (Lightbox 100% Responsive) -->
   <div id="visor-imagen-modal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[60] hidden flex flex-col justify-between p-3 sm:p-5 select-none">
     
     <!-- Barra Superior de Controles -->
     <div class="flex justify-between items-center w-full max-w-5xl mx-auto z-10 shrink-0">
       
-      <!-- Indicador de porcentaje (Visible solo en escritorio) -->
+      <!-- Indicador de porcentaje (Visible solo en desktop) -->
       <div class="hidden md:flex items-center gap-2 bg-slate-900/80 px-3 py-1.5 rounded-full border border-slate-700/60 text-white text-xs">
         <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
         <span id="visor-zoom-level" class="font-mono font-bold text-slate-200">100%</span>
       </div>
 
-      <!-- Botonera de Zoom (Visible solo en escritorio: hidden md:flex) -->
+      <!-- Botonera de Zoom (Oculta en móviles: hidden md:flex) -->
       <div class="hidden md:flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-full border border-slate-700/60 shadow-xl">
         <button id="visor-btn-zoom-out" type="button" title="Alejar (-)" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-200 hover:text-white hover:bg-slate-800 transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
@@ -190,18 +189,18 @@
         </button>
       </div>
 
-      <!-- Botón de Cerrar (Siempre visible, en móvil se posiciona automáticamente a la derecha) -->
+      <!-- Botón de Cerrar Visor -->
       <button id="visor-btn-close" type="button" title="Cerrar visor (Esc)" class="ml-auto md:ml-0 w-10 h-10 rounded-full bg-slate-800/90 hover:bg-red-600 text-white flex items-center justify-center transition shadow-lg shrink-0">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
     </div>
 
-    <!-- Área de Visualización (min-h-0 evita el colapso de altura en Flexbox) -->
+    <!-- Área de Visualización -->
     <div id="visor-canvas" class="flex-1 w-full min-h-0 flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing relative my-2 touch-none">
       <img id="visor-img" src="" alt="Inspección detallada" class="max-w-full max-h-full object-contain transition-transform duration-100 ease-out pointer-events-none drop-shadow-2xl">
     </div>
 
-    <!-- Pie Informativo (Visible solo en escritorio) -->
+    <!-- Pie Informativo -->
     <div class="text-center text-[11px] text-slate-400 z-10 shrink-0 hidden md:block">
       <span>Doble clic o rueda del ratón para hacer zoom | Arrastra la imagen para moverte</span>
     </div>
