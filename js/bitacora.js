@@ -16,7 +16,7 @@ const modalClose = document.getElementById('modal-close');
 const modalCloseBtn = document.getElementById('modal-close-btn');
 const modalBitacoraImgContainer = document.getElementById('modal-bitacora-img-container');
 
-// Elementos del visor de inspección (Zoom Lightbox)
+// Elementos del visor de inspección
 const visorModal = document.getElementById('visor-imagen-modal');
 const visorImg = document.getElementById('visor-img');
 const visorCanvas = document.getElementById('visor-canvas');
@@ -32,6 +32,10 @@ let posY = 0;
 let isDragging = false;
 let startX = 0;
 let startY = 0;
+
+let initialPinchDistance = 0;
+let initialPinchScale = 1;
+let lastTapTime = 0;
 
 function actualizarTransformacionVisor() {
   if (!visorImg) return;
@@ -55,7 +59,7 @@ function cerrarVisor() {
 }
 
 function aplicarZoom(delta) {
-  zoomScale = Math.min(Math.max(0.5, zoomScale + delta), 4);
+  zoomScale = Math.min(Math.max(1, zoomScale + delta), 4);
   if (zoomScale <= 1) {
     posX = 0;
     posY = 0;
@@ -91,9 +95,62 @@ if (visorCanvas) {
       posX = 0;
       posY = 0;
     } else {
-      zoomScale = 2.2;
+      zoomScale = 2;
     }
     actualizarTransformacionVisor();
+  });
+
+  visorCanvas.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+      isDragging = true;
+      startX = e.touches[0].clientX - posX;
+      startY = e.touches[0].clientY - posY;
+
+      const now = Date.now();
+      if (now - lastTapTime < 300) {
+        if (zoomScale > 1) {
+          zoomScale = 1;
+          posX = 0;
+          posY = 0;
+        } else {
+          zoomScale = 2;
+        }
+        actualizarTransformacionVisor();
+      }
+      lastTapTime = now;
+    } else if (e.touches.length === 2) {
+      isDragging = false;
+      initialPinchDistance = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      initialPinchScale = zoomScale;
+    }
+  }, { passive: true });
+
+  visorCanvas.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 1 && isDragging && zoomScale > 1) {
+      posX = e.touches[0].clientX - startX;
+      posY = e.touches[0].clientY - startY;
+      actualizarTransformacionVisor();
+    } else if (e.touches.length === 2 && initialPinchDistance > 0) {
+      const currentDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const factor = currentDist / initialPinchDistance;
+      zoomScale = Math.min(Math.max(1, initialPinchScale * factor), 4);
+      if (zoomScale <= 1) {
+        posX = 0;
+        posY = 0;
+      }
+      actualizarTransformacionVisor();
+    }
+  }, { passive: true });
+
+  visorCanvas.addEventListener('touchend', (e) => {
+    if (e.touches.length < 2) initialPinchDistance = 0;
+    if (e.touches.length === 0) isDragging = false;
   });
 }
 
@@ -107,7 +164,6 @@ if (visorBtnReset) visorBtnReset.addEventListener('click', () => {
 });
 if (visorBtnClose) visorBtnClose.addEventListener('click', cerrarVisor);
 
-// Clic en la foto de la bitácora abre la inspección
 if (modalBitacoraImgContainer) {
   modalBitacoraImgContainer.addEventListener('click', (e) => {
     if (e.target.closest('#modal-close')) return;

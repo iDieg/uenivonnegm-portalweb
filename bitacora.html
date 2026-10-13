@@ -165,46 +165,44 @@
     </div>
   </div>
 
-<!-- Modal Visor de Imagen con Zoom e Inspección (Lightbox Responsive) -->
-  <div id="visor-imagen-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[60] hidden flex flex-col justify-between p-3 sm:p-4 select-none">
+<!-- Modal Visor de Imagen con Zoom e Inspección (Lightbox 100% Responsive) -->
+  <div id="visor-imagen-modal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[60] hidden flex flex-col justify-between p-3 sm:p-5 select-none">
     
     <!-- Barra Superior de Controles -->
-    <div class="flex justify-between items-center max-w-5xl mx-auto w-full z-10">
+    <div class="flex justify-between items-center w-full max-w-5xl mx-auto z-10 shrink-0">
       
-      <!-- Indicador de porcentaje (Visible solo en computadoras: hidden md:flex) -->
+      <!-- Indicador de porcentaje (Visible solo en escritorio) -->
       <div class="hidden md:flex items-center gap-2 bg-slate-900/80 px-3 py-1.5 rounded-full border border-slate-700/60 text-white text-xs">
         <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
         <span id="visor-zoom-level" class="font-mono font-bold text-slate-200">100%</span>
       </div>
 
-      <!-- Botonera Flotante de Zoom (OCULTA EN TELÉFONOS: hidden md:flex) -->
+      <!-- Botonera de Zoom (Visible solo en escritorio: hidden md:flex) -->
       <div class="hidden md:flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-full border border-slate-700/60 shadow-xl">
-        <button id="visor-btn-zoom-out" title="Alejar (-)" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-200 hover:text-white hover:bg-slate-800 transition">
+        <button id="visor-btn-zoom-out" type="button" title="Alejar (-)" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-200 hover:text-white hover:bg-slate-800 transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
         </button>
-        <button id="visor-btn-reset" title="Restablecer (100%)" class="px-2.5 h-8 rounded-full flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 text-[11px] font-semibold transition">
+        <button id="visor-btn-reset" type="button" title="Restablecer (100%)" class="px-2.5 h-8 rounded-full flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 text-[11px] font-semibold transition">
           100%
         </button>
-        <button id="visor-btn-zoom-in" title="Acercar (+)" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-200 hover:text-white hover:bg-slate-800 transition">
+        <button id="visor-btn-zoom-in" type="button" title="Acercar (+)" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-200 hover:text-white hover:bg-slate-800 transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         </button>
       </div>
 
-      <!-- Botón de Cerrar (En móviles se alinea automáticamente a la derecha) -->
-      <div class="ml-auto md:ml-0">
-        <button id="visor-btn-close" title="Cerrar visor (Esc)" class="w-10 h-10 rounded-full bg-slate-800/90 hover:bg-red-600 text-white flex items-center justify-center transition shadow-lg">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-      </div>
+      <!-- Botón de Cerrar (Siempre visible, en móvil se posiciona automáticamente a la derecha) -->
+      <button id="visor-btn-close" type="button" title="Cerrar visor (Esc)" class="ml-auto md:ml-0 w-10 h-10 rounded-full bg-slate-800/90 hover:bg-red-600 text-white flex items-center justify-center transition shadow-lg shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
     </div>
 
-    <!-- Área de Visualización (con touch-none para capturar gestos táctiles sin interferencia del navegador) -->
-    <div id="visor-canvas" class="flex-1 w-full h-full flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing relative my-2 touch-none">
-      <img id="visor-img" src="" alt="Inspección detallada" class="max-w-full max-h-[85vh] object-contain transition-transform duration-100 ease-out pointer-events-none drop-shadow-2xl">
+    <!-- Área de Visualización (min-h-0 evita el colapso de altura en Flexbox) -->
+    <div id="visor-canvas" class="flex-1 w-full min-h-0 flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing relative my-2 touch-none">
+      <img id="visor-img" src="" alt="Inspección detallada" class="max-w-full max-h-full object-contain transition-transform duration-100 ease-out pointer-events-none drop-shadow-2xl">
     </div>
 
-    <!-- Leyenda Informativa (Oculta en móviles para dar 100% de espacio a la imagen) -->
-    <div class="text-center text-[11px] text-slate-400 z-10 hidden md:block">
+    <!-- Pie Informativo (Visible solo en escritorio) -->
+    <div class="text-center text-[11px] text-slate-400 z-10 shrink-0 hidden md:block">
       <span>Doble clic o rueda del ratón para hacer zoom | Arrastra la imagen para moverte</span>
     </div>
   </div>

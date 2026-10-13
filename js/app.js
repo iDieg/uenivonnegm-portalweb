@@ -15,7 +15,7 @@ const modalClose = document.getElementById('modal-com-close');
 const modalCloseBtn = document.getElementById('modal-com-close-btn');
 const modalImgContainer = document.getElementById('modal-com-img-container');
 
-// Elementos del visor de inspección (Zoom Lightbox)
+// Elementos del visor de inspección
 const visorModal = document.getElementById('visor-imagen-modal');
 const visorImg = document.getElementById('visor-img');
 const visorCanvas = document.getElementById('visor-canvas');
@@ -32,7 +32,6 @@ let isDragging = false;
 let startX = 0;
 let startY = 0;
 
-// Variables de estado táctil para móviles
 let initialPinchDistance = 0;
 let initialPinchScale = 1;
 let lastTapTime = 0;
@@ -67,8 +66,9 @@ function aplicarZoom(delta) {
   actualizarTransformacionVisor();
 }
 
+// Configuración de interacción (Ratón + Gestos táctiles)
 if (visorCanvas) {
-  // --- Eventos de Escritorio (Ratón) ---
+  // Escritorio (Ratón)
   visorCanvas.addEventListener('mousedown', (e) => {
     if (zoomScale <= 1) return;
     isDragging = true;
@@ -96,19 +96,18 @@ if (visorCanvas) {
       posX = 0;
       posY = 0;
     } else {
-      zoomScale = 2.2;
+      zoomScale = 2;
     }
     actualizarTransformacionVisor();
   });
 
-  // --- Eventos Táctiles para Dispositivos Móviles ---
+  // Móvil (Pantalla Táctil)
   visorCanvas.addEventListener('touchstart', (e) => {
     if (e.touches.length === 1) {
       isDragging = true;
       startX = e.touches[0].clientX - posX;
       startY = e.touches[0].clientY - posY;
 
-      // Doble toque rápido para alternar zoom (100% <-> 220%)
       const now = Date.now();
       if (now - lastTapTime < 300) {
         if (zoomScale > 1) {
@@ -116,13 +115,12 @@ if (visorCanvas) {
           posX = 0;
           posY = 0;
         } else {
-          zoomScale = 2.2;
+          zoomScale = 2;
         }
         actualizarTransformacionVisor();
       }
       lastTapTime = now;
     } else if (e.touches.length === 2) {
-      // Inicia gesto de pellizco
       isDragging = false;
       initialPinchDistance = Math.hypot(
         e.touches[0].clientX - e.touches[1].clientX,
@@ -134,12 +132,10 @@ if (visorCanvas) {
 
   visorCanvas.addEventListener('touchmove', (e) => {
     if (e.touches.length === 1 && isDragging && zoomScale > 1) {
-      // Arrastrar la imagen ampliada
       posX = e.touches[0].clientX - startX;
       posY = e.touches[0].clientY - startY;
       actualizarTransformacionVisor();
     } else if (e.touches.length === 2 && initialPinchDistance > 0) {
-      // Cálculo dinámico de escala por pellizco
       const currentDist = Math.hypot(
         e.touches[0].clientX - e.touches[1].clientX,
         e.touches[0].clientY - e.touches[1].clientY
@@ -160,7 +156,6 @@ if (visorCanvas) {
   });
 }
 
-// Botones de escritorio (solo operan si están presentes y visibles)
 if (visorBtnZoomIn) visorBtnZoomIn.addEventListener('click', () => aplicarZoom(0.3));
 if (visorBtnZoomOut) visorBtnZoomOut.addEventListener('click', () => aplicarZoom(-0.3));
 if (visorBtnReset) visorBtnReset.addEventListener('click', () => {
@@ -171,7 +166,7 @@ if (visorBtnReset) visorBtnReset.addEventListener('click', () => {
 });
 if (visorBtnClose) visorBtnClose.addEventListener('click', cerrarVisor);
 
-// Clic en la foto del comunicado abre la inspección a pantalla completa
+// Clic en la imagen del modal abre el visor a pantalla completa
 if (modalImgContainer) {
   modalImgContainer.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -179,7 +174,7 @@ if (modalImgContainer) {
   });
 }
 
-// Carga y renderizado de la Cartelera
+// Carga de Comunicados
 async function cargarComunicados() {
   const grid = document.getElementById('comunicados-grid');
 
