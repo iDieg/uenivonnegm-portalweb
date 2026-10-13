@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acceso Administrativo - U.E.N. Ivonne González Marcano</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between font-sans">
+
+  <!-- Cintillo Superior -->
+  <div class="bg-blue-950 text-slate-300 text-xs py-2 px-4 text-center border-b border-blue-900">
+    <span>Sistema de Gestión de Contenidos Institucionales | U.E.N. Ivonne González Marcano</span>
+  </div>
+
+  <!-- Contenedor Central de Login -->
+  <main class="flex-1 flex items-center justify-center p-4">
+    <div class="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+      
+      <!-- Cabecera de la Tarjeta -->
+      <div class="bg-gradient-to-r from-blue-900 to-blue-800 p-8 text-center text-white">
+        <div class="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-white/20 backdrop-blur-sm shadow-inner">
+          <span class="font-extrabold text-xl tracking-wider text-blue-200">IGM</span>
+        </div>
+        <h1 class="text-xl font-bold">Panel de Administración</h1>
+        <p class="text-xs text-blue-200 mt-1">Ingreso exclusivo para Personal Directivo y Secretaría</p>
+      </div>
+
+      <!-- Formulario de Acceso -->
+      <div class="p-8">
+        <!-- Caja de Notificaciones y Alertas -->
+        <div id="alert-box" class="hidden mb-6 p-4 rounded-xl text-xs flex items-start gap-3 transition">
+          <span id="alert-icon" class="text-base font-bold leading-none"></span>
+          <p id="alert-msg" class="leading-relaxed"></p>
+        </div>
+
+        <form id="login-form" class="space-y-5" autocomplete="on">
+          <div>
+            <label for="email" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              Correo Electrónico
+            </label>
+            <div class="relative">
+              <input 
+                type="email" 
+                id="email" 
+                name="email" 
+                required 
+                autocomplete="username" 
+                placeholder="ejemplo@correo.com"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:bg-white transition"
+              >
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-1.5">
+              <label for="password" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                Contraseña
+              </label>
+              <a href="recuperar.html" class="text-[11px] text-blue-700 hover:text-blue-900 font-semibold transition">
+                ¿Olvidaste tu contraseña?
+              </a>
+            </div>
+            <div class="relative">
+              <input 
+                type="password" 
+                id="password" 
+                name="password" 
+                required 
+                autocomplete="current-password" 
+                placeholder="••••••••••••"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:bg-white transition"
+              >
+            </div>
+          </div>
+
+          <button 
+            type="submit" 
+            id="btn-submit"
+            class="w-full bg-blue-900 hover:bg-blue-800 active:bg-blue-950 text-white font-bold py-3 px-4 rounded-xl transition text-xs shadow-md flex items-center justify-center gap-2"
+          >
+            <span id="btn-text">Iniciar Sesión</span>
+            <div id="btn-spinner" class="hidden w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+          </button>
+        </form>
+
+        <div class="mt-6 pt-6 border-t border-slate-100 text-center">
+          <a href="../index.html" class="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 transition font-medium">
+            <span>&larr;</span>
+            <span>Volver al Portal Oficial</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="py-4 text-center text-[11px] text-slate-400">
+    U.E.N. Ivonne González Marcano &copy; 2026 | Seguridad y Protección de Acceso
+  </footer>
+
+  <!-- Script Modular de Autenticación -->
+  <script type="module" src="../js/auth.js"></script>
+</body>
+</html>
