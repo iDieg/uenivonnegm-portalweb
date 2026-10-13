@@ -6,8 +6,10 @@ let listaComunicadosCache = [];
 let listaBitacoraCache = [];
 
 // ==========================================
-// UTILIDADES: TOAST NOTIFICATIONS & PREVIEWS
+// 1. UTILIDADES Y OPTIMIZACIÓN DE ESPACIO
 // ==========================================
+
+// Notificaciones flotantes tipo Toast
 function mostrarToast(tipo, mensaje) {
   const toast = document.getElementById('toast');
   const icon = document.getElementById('toast-icon');
@@ -33,25 +35,71 @@ function mostrarToast(tipo, mensaje) {
   }, 4000);
 }
 
-// Subida de imagen al bucket Supabase Storage
+// Reducción de peso y resolución en el cliente antes de subir a Supabase
+function optimizarImagen(archivoOriginal, maxAncho = 1200, calidad = 0.75) {
+  return new Promise((resolve, reject) => {
+    if (!archivoOriginal.type.startsWith('image/')) {
+      return resolve(archivoOriginal);
+    }
+
+    const reader = new FileReader();
+    reader.readAsDataURL(archivoOriginal);
+    reader.onload = (e) => {
+      const img = new Image();
+      img.src = e.target.result;
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxAncho) {
+          height = Math.round((height * maxAncho) / width);
+          width = maxAncho;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return reject(new Error('Fallo al comprimir la imagen.'));
+            const archivoComprimido = new File([blob], archivoOriginal.name.replace(/\.[^/.]+$/, ".jpg"), {
+              type: 'image/jpeg',
+              lastModified: Date.now()
+            });
+            resolve(archivoComprimido);
+          },
+          'image/jpeg',
+          calidad
+        );
+      };
+      img.onerror = () => reject(new Error('Error al decodificar la imagen.'));
+    };
+    reader.onerror = () => reject(new Error('Error al leer el archivo.'));
+  });
+}
+
+// Subida al bucket Storage de Supabase
 async function subirImagen(file) {
   if (!file) return null;
 
-  // Sanitización y nombre único con timestamp
-  const extension = file.name.split('.').pop();
-  const nombreLimpio = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${extension}`;
+  const archivoLigero = await optimizarImagen(file, 1200, 0.75);
+  const nombreLimpio = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.jpg`;
   const ruta = `public/${nombreLimpio}`;
 
-  const { data, error } = await supabase.storage
+  const { error } = await supabase.storage
     .from(BUCKET_NAME)
-    .upload(ruta, file, {
-      cacheControl: '3600',
+    .upload(ruta, archivoLigero, {
+      cacheControl: '31536000',
       upsert: false
     });
 
   if (error) {
-    console.error('Error subiendo archivo a Supabase Storage:', error);
-    throw new Error('Fallo al subir la imagen al servidor de almacenamiento.');
+    console.error('Error subiendo al Storage:', error);
+    throw new Error('Fallo al subir el archivo al almacenamiento en la nube.');
   }
 
   const { data: publicData } = supabase.storage
@@ -61,9 +109,24 @@ async function subirImagen(file) {
   return publicData.publicUrl;
 }
 
+// Eliminación de archivo huérfano en Storage
+async function eliminarArchivoDeStorage(urlPublica) {
+  if (!urlPublica) return;
+  try {
+    const partes = urlPublica.split(`${BUCKET_NAME}/`);
+    if (partes.length > 1) {
+      const rutaArchivo = decodeURIComponent(partes[1]);
+      await supabase.storage.from(BUCKET_NAME).remove([rutaArchivo]);
+    }
+  } catch (err) {
+    console.warn('Advertencia al remover archivo del bucket:', err);
+  }
+}
+
 // ==========================================
-// SECCIÓN 1: CRUD COMUNICADOS
+// 2. MÓDULO CRUD: COMUNICADOS OFICIALES
 // ==========================================
+
 async function cargarComunicados() {
   const contenedor = document.getElementById('lista-comunicados');
   const badgeCount = document.getElementById('badge-count-comunicados');
@@ -136,7 +199,6 @@ function renderizarListaComunicados(lista) {
     contenedor.appendChild(card);
   });
 
-  // Event Listeners dinámicos
   document.querySelectorAll('.btn-edit-comunicado').forEach(btn => {
     btn.addEventListener('click', () => prepararEdicionComunicado(btn.getAttribute('data-id')));
   });
@@ -194,7 +256,7 @@ async function guardarComunicado(e) {
   const emisor = document.getElementById('comunicado-emisor').value.trim();
   const contenido = document.getElementById('comunicado-contenido').value.trim();
   const fileInput = document.getElementById('comunicado-file');
-  let imagenUrl = document.getElementById('comunicado-img-existente').value;
+  let imagenUrlActual = document.getElementById('comunicado-img-existente').value;
 
   const btnSubmit = document.getElementById('btn-submit-comunicado');
   const btnSpinner = document.getElementById('spin-submit-comunicado');
@@ -205,9 +267,14 @@ async function guardarComunicado(e) {
     btnSpinner.classList.remove('hidden');
     btnText.textContent = 'Procesando...';
 
-    // Subir nueva foto si fue seleccionada
+    // Subir imagen optimizada si se seleccionó archivo
     if (fileInput.files.length > 0) {
-      imagenUrl = await subirImagen(fileInput.files[0]);
+      const nuevaUrl = await subirImagen(fileInput.files[0]);
+      // Si ya tenía imagen previa en modo edición, eliminar la antigua del Storage
+      if (id && imagenUrlActual) {
+        await eliminarArchivoDeStorage(imagenUrlActual);
+      }
+      imagenUrlActual = nuevaUrl;
     }
 
     const payload = {
@@ -215,16 +282,14 @@ async function guardarComunicado(e) {
       categoria,
       emisor,
       contenido,
-      imagen_url: imagenUrl || null
+      imagen_url: imagenUrlActual || null
     };
 
     if (id) {
-      // UPDATE
       const { error } = await supabase.from('comunicados').update(payload).eq('id', id);
       if (error) throw error;
       mostrarToast('exito', 'Aviso actualizado correctamente.');
     } else {
-      // INSERT
       const { error } = await supabase.from('comunicados').insert([payload]);
       if (error) throw error;
       mostrarToast('exito', 'Nuevo aviso publicado en cartelera.');
@@ -246,9 +311,16 @@ async function eliminarComunicado(id) {
   if (!confirm('¿Confirma que desea eliminar este comunicado oficial?')) return;
 
   try {
+    const item = listaComunicadosCache.find(c => c.id === id);
+
     const { error } = await supabase.from('comunicados').delete().eq('id', id);
     if (error) throw error;
-    mostrarToast('exito', 'Comunicado eliminado.');
+
+    if (item && item.imagen_url) {
+      await eliminarArchivoDeStorage(item.imagen_url);
+    }
+
+    mostrarToast('exito', 'Comunicado e imagen eliminados.');
     cargarComunicados();
   } catch (err) {
     mostrarToast('error', err.message || 'No se pudo eliminar el comunicado.');
@@ -256,8 +328,9 @@ async function eliminarComunicado(id) {
 }
 
 // ==========================================
-// SECCIÓN 2: CRUD BITÁCORA
+// 3. MÓDULO CRUD: BITÁCORA INSTITUCIONAL
 // ==========================================
+
 async function cargarBitacora() {
   const contenedor = document.getElementById('lista-bitacora');
   const badgeCount = document.getElementById('badge-count-bitacora');
@@ -374,7 +447,7 @@ async function guardarBitacora(e) {
   const resumen = document.getElementById('bitacora-resumen').value.trim();
   const contenido = document.getElementById('bitacora-contenido').value.trim();
   const fileInput = document.getElementById('bitacora-file');
-  let imagenUrl = document.getElementById('bitacora-img-existente').value;
+  let imagenUrlActual = document.getElementById('bitacora-img-existente').value;
 
   if (!id && fileInput.files.length === 0) {
     mostrarToast('error', 'La fotografía es obligatoria para las entradas de bitácora.');
@@ -391,7 +464,11 @@ async function guardarBitacora(e) {
     btnText.textContent = 'Procesando...';
 
     if (fileInput.files.length > 0) {
-      imagenUrl = await subirImagen(fileInput.files[0]);
+      const nuevaUrl = await subirImagen(fileInput.files[0]);
+      if (id && imagenUrlActual) {
+        await eliminarArchivoDeStorage(imagenUrlActual);
+      }
+      imagenUrlActual = nuevaUrl;
     }
 
     const payload = {
@@ -399,7 +476,7 @@ async function guardarBitacora(e) {
       fecha_evento: fechaEvento,
       resumen,
       contenido,
-      imagen_url: imagenUrl
+      imagen_url: imagenUrlActual
     };
 
     if (id) {
@@ -428,9 +505,16 @@ async function eliminarBitacora(id) {
   if (!confirm('¿Confirma que desea eliminar esta nota de la bitácora escolar?')) return;
 
   try {
+    const item = listaBitacoraCache.find(b => b.id === id);
+
     const { error } = await supabase.from('bitacora').delete().eq('id', id);
     if (error) throw error;
-    mostrarToast('exito', 'Nota eliminada.');
+
+    if (item && item.imagen_url) {
+      await eliminarArchivoDeStorage(item.imagen_url);
+    }
+
+    mostrarToast('exito', 'Nota e imagen eliminadas.');
     cargarBitacora();
   } catch (err) {
     mostrarToast('error', err.message || 'No se pudo eliminar la nota.');
@@ -438,21 +522,21 @@ async function eliminarBitacora(id) {
 }
 
 // ==========================================
-// INICIALIZACIÓN Y EVENT LISTENERS
+// 4. INICIALIZACIÓN Y EVENT LISTENERS
 // ==========================================
+
 document.addEventListener('DOMContentLoaded', async () => {
-  // 1. Guardián de seguridad: Redirigir a login si no hay sesión
+  // Verificación de credenciales activas
   const usuario = await verificarSesionProtegida();
   if (!usuario) return;
 
   const userDisplay = document.getElementById('user-display');
   if (userDisplay) userDisplay.textContent = usuario.email;
 
-  // Fecha por defecto hoy para bitácora
   const fechaBitacora = document.getElementById('bitacora-fecha');
   if (fechaBitacora) fechaBitacora.valueAsDate = new Date();
 
-  // 2. Control de Pestañas (Tabs)
+  // Control de pestañas (Tabs)
   const tabComunicadosBtn = document.getElementById('tab-comunicados-btn');
   const tabBitacoraBtn = document.getElementById('tab-bitacora-btn');
   const tabComunicados = document.getElementById('tab-comunicados');
@@ -472,7 +556,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     tabComunicadosBtn.className = 'tab-btn pb-3 px-3 text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2 transition font-bold';
   });
 
-  // 3. Previsualizadores de archivos seleccionados
+  // Previsualización y descarte de imágenes en formularios
   const fileComunicado = document.getElementById('comunicado-file');
   const previewContainerCom = document.getElementById('comunicado-preview-container');
   const previewCom = document.getElementById('comunicado-preview');
@@ -507,7 +591,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     previewContainerBit.classList.add('hidden');
   });
 
-  // 4. Submit Forms y Botones de Cancelar
+  // Eventos de formularios y botones
   document.getElementById('form-comunicado').addEventListener('submit', guardarComunicado);
   document.getElementById('cancel-edit-comunicado').addEventListener('click', cancelarEdicionComunicado);
   document.getElementById('btn-refresh-comunicados').addEventListener('click', cargarComunicados);
@@ -516,10 +600,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('cancel-edit-bitacora').addEventListener('click', cancelarEdicionBitacora);
   document.getElementById('btn-refresh-bitacora').addEventListener('click', cargarBitacora);
 
-  // 5. Cerrar sesión
   document.getElementById('btn-logout').addEventListener('click', cerrarSesion);
 
-  // 6. Carga inicial de datos
+  // Sincronización inicial
   cargarComunicados();
   cargarBitacora();
 });
