@@ -25,13 +25,17 @@ const visorBtnZoomOut = document.getElementById('visor-btn-zoom-out');
 const visorBtnReset = document.getElementById('visor-btn-reset');
 const visorBtnClose = document.getElementById('visor-btn-close');
 
-// Estado interno del visor de zoom
 let zoomScale = 1;
 let posX = 0;
 let posY = 0;
 let isDragging = false;
 let startX = 0;
 let startY = 0;
+
+// Variables de estado táctil para móviles
+let initialPinchDistance = 0;
+let initialPinchScale = 1;
+let lastTapTime = 0;
 
 function actualizarTransformacionVisor() {
   if (!visorImg) return;
@@ -55,7 +59,7 @@ function cerrarVisor() {
 }
 
 function aplicarZoom(delta) {
-  zoomScale = Math.min(Math.max(0.5, zoomScale + delta), 4);
+  zoomScale = Math.min(Math.max(1, zoomScale + delta), 4);
   if (zoomScale <= 1) {
     posX = 0;
     posY = 0;
@@ -63,8 +67,8 @@ function aplicarZoom(delta) {
   actualizarTransformacionVisor();
 }
 
-// Configurar interactividad del visor
 if (visorCanvas) {
+  // --- Eventos de Escritorio (Ratón) ---
   visorCanvas.addEventListener('mousedown', (e) => {
     if (zoomScale <= 1) return;
     isDragging = true;
@@ -81,13 +85,11 @@ if (visorCanvas) {
 
   window.addEventListener('mouseup', () => { isDragging = false; });
 
-  // Zoom con rueda del ratón
   visorCanvas.addEventListener('wheel', (e) => {
     e.preventDefault();
     aplicarZoom(e.deltaY < 0 ? 0.2 : -0.2);
   }, { passive: false });
 
-  // Doble clic para alternar zoom rápido
   visorCanvas.addEventListener('dblclick', () => {
     if (zoomScale > 1) {
       zoomScale = 1;
@@ -98,8 +100,67 @@ if (visorCanvas) {
     }
     actualizarTransformacionVisor();
   });
+
+  // --- Eventos Táctiles para Dispositivos Móviles ---
+  visorCanvas.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+      isDragging = true;
+      startX = e.touches[0].clientX - posX;
+      startY = e.touches[0].clientY - posY;
+
+      // Doble toque rápido para alternar zoom (100% <-> 220%)
+      const now = Date.now();
+      if (now - lastTapTime < 300) {
+        if (zoomScale > 1) {
+          zoomScale = 1;
+          posX = 0;
+          posY = 0;
+        } else {
+          zoomScale = 2.2;
+        }
+        actualizarTransformacionVisor();
+      }
+      lastTapTime = now;
+    } else if (e.touches.length === 2) {
+      // Inicia gesto de pellizco
+      isDragging = false;
+      initialPinchDistance = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      initialPinchScale = zoomScale;
+    }
+  }, { passive: true });
+
+  visorCanvas.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 1 && isDragging && zoomScale > 1) {
+      // Arrastrar la imagen ampliada
+      posX = e.touches[0].clientX - startX;
+      posY = e.touches[0].clientY - startY;
+      actualizarTransformacionVisor();
+    } else if (e.touches.length === 2 && initialPinchDistance > 0) {
+      // Cálculo dinámico de escala por pellizco
+      const currentDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const factor = currentDist / initialPinchDistance;
+      zoomScale = Math.min(Math.max(1, initialPinchScale * factor), 4);
+      if (zoomScale <= 1) {
+        posX = 0;
+        posY = 0;
+      }
+      actualizarTransformacionVisor();
+    }
+  }, { passive: true });
+
+  visorCanvas.addEventListener('touchend', (e) => {
+    if (e.touches.length < 2) initialPinchDistance = 0;
+    if (e.touches.length === 0) isDragging = false;
+  });
 }
 
+// Botones de escritorio (solo operan si están presentes y visibles)
 if (visorBtnZoomIn) visorBtnZoomIn.addEventListener('click', () => aplicarZoom(0.3));
 if (visorBtnZoomOut) visorBtnZoomOut.addEventListener('click', () => aplicarZoom(-0.3));
 if (visorBtnReset) visorBtnReset.addEventListener('click', () => {
