@@ -292,4 +292,8 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-document.addEventListener('DOMContentLoaded', cargarBitacora);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', cargarBitacora);
+} else {
+  cargarBitacora();
+}

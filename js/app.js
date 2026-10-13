@@ -327,4 +327,8 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
   });
 });
 
-document.addEventListener('DOMContentLoaded', cargarComunicados);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', cargarComunicados);
+} else {
+  cargarComunicados();
+}
