@@ -99,7 +99,6 @@ export async function solicitarRecuperacion(email) {
       if (btnSpinner) btnSpinner.classList.remove('hidden');
     }
 
-    // El enlace redirigirá al usuario directamente a la misma página para fijar su nueva clave
     const redirectTo = window.location.origin + window.location.pathname;
 
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
@@ -158,15 +157,40 @@ export async function actualizarContrasena(nuevaClave) {
   }
 }
 
+// Función interactiva para conmutar visibilidad de contraseñas
+function inicializarTogglesPassword() {
+  document.querySelectorAll('.btn-toggle-password').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-target');
+      const input = document.getElementById(targetId);
+      if (!input) return;
+
+      const esPassword = input.type === 'password';
+      input.type = esPassword ? 'text' : 'password';
+
+      const iconEye = btn.querySelector('.icon-eye');
+      const iconEyeSlash = btn.querySelector('.icon-eye-slash');
+
+      if (iconEye && iconEyeSlash) {
+        iconEye.classList.toggle('hidden', esPassword);
+        iconEyeSlash.classList.toggle('hidden', !esPassword);
+      }
+
+      btn.setAttribute('aria-label', esPassword ? 'Ocultar contraseña' : 'Mostrar contraseña');
+    });
+  });
+}
+
 // ==========================================
 // DETECCIÓN DE EVENTOS SEGÚN LA PÁGINA ACTIVA
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
-  
+  // Inicializa los botones de ver/ocultar contraseña en cualquier formulario
+  inicializarTogglesPassword();
+
   // Handler en login.html
   const loginForm = document.getElementById('login-form');
   if (loginForm) {
-    // Si ya existe sesión activa previa, llevar directo al dashboard
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
       window.location.href = 'dashboard.html';
@@ -186,7 +210,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const formActualizar = document.getElementById('form-actualizar');
 
   if (formSolicitar && formActualizar) {
-    // Escuchar si Supabase detecta el token de recuperación en la URL
     supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'PASSWORD_RECOVERY' || (session && window.location.hash.includes('type=recovery'))) {
         formSolicitar.classList.add('hidden');
