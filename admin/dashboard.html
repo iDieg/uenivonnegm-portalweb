@@ -119,6 +119,15 @@
               </div>
             </div>
 
+            <!-- Control de Aviso Fijado (Máx. 3) -->
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <label class="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" id="comunicado-fijado" class="w-4 h-4 text-blue-900 rounded border-slate-300 focus:ring-blue-900">
+                <span class="font-semibold text-slate-700">Fijar al inicio de la cartelera 📌 (Máx. 3)</span>
+              </label>
+              <p class="text-[10px] text-slate-500 mt-1 ml-6">Aparecerá siempre de primero por encima de los comunicados regulares.</p>
+            </div>
+
             <button type="submit" id="btn-submit-comunicado"
               class="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-2.5 px-4 rounded-xl transition shadow flex items-center justify-center gap-2">
               <span id="txt-submit-comunicado">Publicar en Cartelera</span>
@@ -201,6 +210,15 @@
                 <img id="bitacora-preview" src="" alt="Previsualización" class="w-full h-36 object-cover rounded-lg border border-slate-200">
                 <button type="button" id="btn-remove-bitacora-img" class="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1 text-[10px] shadow">✕</button>
               </div>
+            </div>
+            
+            <!-- Control de Nota Fijada en Bitácora (Máx. 3) -->
+            <div class="p-3 bg-amber-50/60 rounded-xl border border-amber-200">
+              <label class="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" id="bitacora-fijado" class="w-4 h-4 text-amber-700 rounded border-slate-300 focus:ring-amber-600">
+                <span class="font-semibold text-amber-900">Fijar al inicio de la bitácora 📌 (Máx. 3)</span>
+              </label>
+              <p class="text-[10px] text-amber-800/80 mt-1 ml-6">Aparecerá de primera en la galería de notas institucionales.</p>
             </div>
 
             <button type="submit" id="btn-submit-bitacora"

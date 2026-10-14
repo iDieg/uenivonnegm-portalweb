@@ -171,12 +171,13 @@ if (modalBitacoraImgContainer) {
   });
 }
 
-// Carga de la Bitácora
+// Carga de la Bitácora con prioridad a notas fijadas
 async function cargarBitacora() {
   try {
     const { data, error } = await supabase
       .from('bitacora')
       .select('*')
+      .order('fijado', { ascending: false })
       .order('fecha_evento', { ascending: false });
 
     if (error) throw error;
@@ -211,17 +212,28 @@ function renderizarBitacora(lista) {
 
   lista.forEach(nota => {
     const card = document.createElement('article');
-    card.className = 'cursor-pointer bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition duration-200 flex flex-col justify-between group';
+    const borderClass = nota.fijado 
+      ? 'border-amber-300 ring-1 ring-amber-200/70 bg-gradient-to-b from-amber-50/20 to-white' 
+      : 'border-slate-200 bg-white';
+
+    card.className = `cursor-pointer ${borderClass} rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition duration-200 flex flex-col justify-between group relative`;
 
     const fechaObj = nota.fecha_evento ? new Date(nota.fecha_evento + 'T00:00:00') : new Date(nota.created_at);
     const fechaFormateada = fechaObj.toLocaleDateString('es-VE', {
       day: 'numeric', month: 'long', year: 'numeric'
     });
 
+    const pinBadgeHTML = nota.fijado
+      ? `<span class="absolute top-3 right-3 bg-amber-400 text-slate-900 border border-amber-300 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-md flex items-center gap-1 backdrop-blur-sm z-10">
+           📌 Fijado
+         </span>`
+      : '';
+
     card.innerHTML = `
       <div>
         <div class="w-full h-48 bg-slate-100 overflow-hidden relative">
           <img src="${nota.imagen_url}" alt="${nota.titulo}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+          ${pinBadgeHTML}
           <span class="absolute bottom-2 left-2 bg-slate-900/80 text-white text-[10px] font-medium px-2 py-0.5 rounded backdrop-blur-sm">
             ${fechaFormateada}
           </span>

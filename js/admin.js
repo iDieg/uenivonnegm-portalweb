@@ -35,7 +35,6 @@ function mostrarToast(tipo, mensaje) {
   }, 4000);
 }
 
-// Modal Animado de Confirmación (Reemplazo de alert/confirm)
 function abrirModalEliminar(titulo, descripcion, callbackEliminar) {
   const modal = document.getElementById('modal-eliminar');
   const card = document.getElementById('modal-eliminar-card');
@@ -77,7 +76,6 @@ function cerrarModalEliminar() {
   }, 250);
 }
 
-// Reducción de peso y resolución en el cliente antes de subir a Supabase
 function optimizarImagen(archivoOriginal, maxAncho = 1200, calidad = 0.75) {
   return new Promise((resolve, reject) => {
     if (!archivoOriginal.type.startsWith('image/')) {
@@ -124,7 +122,6 @@ function optimizarImagen(archivoOriginal, maxAncho = 1200, calidad = 0.75) {
   });
 }
 
-// Subida al bucket Storage de Supabase
 async function subirImagen(file) {
   if (!file) return null;
 
@@ -151,7 +148,6 @@ async function subirImagen(file) {
   return publicData.publicUrl;
 }
 
-// Eliminación de archivo huérfano en Storage
 async function eliminarArchivoDeStorage(urlPublica) {
   if (!urlPublica) return;
   try {
@@ -177,6 +173,7 @@ async function cargarComunicados() {
     const { data, error } = await supabase
       .from('comunicados')
       .select('*')
+      .order('fijado', { ascending: false })
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -201,7 +198,8 @@ function renderizarListaComunicados(lista) {
 
   lista.forEach(item => {
     const card = document.createElement('div');
-    card.className = 'border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white hover:bg-slate-50 transition shadow-sm';
+    const borderClass = item.fijado ? 'border-amber-300 bg-amber-50/30' : 'border-slate-200 bg-white';
+    card.className = `border ${borderClass} rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:shadow-sm transition`;
 
     let badgeClass = 'bg-blue-100 text-blue-900';
     if (item.categoria === 'Primaria') badgeClass = 'bg-emerald-100 text-emerald-900';
@@ -210,6 +208,10 @@ function renderizarListaComunicados(lista) {
     const fecha = new Date(item.created_at).toLocaleDateString('es-VE', {
       day: '2-digit', month: 'short', year: 'numeric'
     });
+
+    const pinBadge = item.fijado
+      ? `<span class="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shadow-2xs">📌 Fijado</span>`
+      : '';
 
     const miniaturaHTML = item.imagen_url
       ? `<img src="${item.imagen_url}" alt="Foto" class="w-14 h-14 object-cover rounded-lg border border-slate-200 flex-shrink-0">`
@@ -220,6 +222,7 @@ function renderizarListaComunicados(lista) {
         ${miniaturaHTML}
         <div class="space-y-1">
           <div class="flex items-center gap-2">
+            ${pinBadge}
             <span class="${badgeClass} text-[10px] font-bold px-2 py-0.5 rounded">${item.categoria}</span>
             <span class="text-[11px] text-slate-400">${fecha}</span>
           </div>
@@ -267,6 +270,7 @@ function prepararEdicionComunicado(id) {
   document.getElementById('comunicado-emisor').value = item.emisor;
   document.getElementById('comunicado-contenido').value = item.contenido;
   document.getElementById('comunicado-img-existente').value = item.imagen_url || '';
+  document.getElementById('comunicado-fijado').checked = Boolean(item.fijado);
 
   const previewContainer = document.getElementById('comunicado-preview-container');
   const preview = document.getElementById('comunicado-preview');
@@ -289,6 +293,7 @@ function cancelarEdicionComunicado() {
   document.getElementById('form-comunicado').reset();
   document.getElementById('comunicado-id').value = '';
   document.getElementById('comunicado-img-existente').value = '';
+  document.getElementById('comunicado-fijado').checked = false;
   document.getElementById('comunicado-preview-container').classList.add('hidden');
 
   document.getElementById('comunicado-form-title').textContent = 'Nuevo Aviso Oficial';
@@ -305,7 +310,17 @@ async function guardarComunicado(e) {
   const emisor = document.getElementById('comunicado-emisor').value.trim();
   const contenido = document.getElementById('comunicado-contenido').value.trim();
   const fileInput = document.getElementById('comunicado-file');
+  const fijado = document.getElementById('comunicado-fijado').checked;
   let imagenUrlActual = document.getElementById('comunicado-img-existente').value;
+
+  // Validación de límite de 3 avisos fijados
+  if (fijado) {
+    const fijadosPrevios = listaComunicadosCache.filter(c => c.fijado && c.id !== id).length;
+    if (fijadosPrevios >= 3) {
+      mostrarToast('error', 'Límite alcanzado: Ya existen 3 comunicados fijados. Desmarca uno para fijar este.');
+      return;
+    }
+  }
 
   const btnSubmit = document.getElementById('btn-submit-comunicado');
   const btnSpinner = document.getElementById('spin-submit-comunicado');
@@ -329,7 +344,8 @@ async function guardarComunicado(e) {
       categoria,
       emisor,
       contenido,
-      imagen_url: imagenUrlActual || null
+      imagen_url: imagenUrlActual || null,
+      fijado: fijado
     };
 
     if (id) {
@@ -386,6 +402,7 @@ async function cargarBitacora() {
     const { data, error } = await supabase
       .from('bitacora')
       .select('*')
+      .order('fijado', { ascending: false })
       .order('fecha_evento', { ascending: false });
 
     if (error) throw error;
@@ -410,17 +427,23 @@ function renderizarListaBitacora(lista) {
 
   lista.forEach(item => {
     const card = document.createElement('div');
-    card.className = 'border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white hover:bg-slate-50 transition shadow-sm';
+    const borderClass = item.fijado ? 'border-amber-300 bg-amber-50/40' : 'border-slate-200 bg-white';
+    card.className = `border ${borderClass} rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:shadow-sm transition`;
 
     const fecha = item.fecha_evento ? new Date(item.fecha_evento + 'T00:00:00').toLocaleDateString('es-VE', {
       day: 'numeric', month: 'short', year: 'numeric'
     }) : 'Fecha no especificada';
+
+    const pinBadge = item.fijado
+      ? `<span class="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shadow-2xs">📌 Fijado</span>`
+      : '';
 
     card.innerHTML = `
       <div class="flex items-start gap-3 flex-1">
         <img src="${item.imagen_url}" alt="Foto bitácora" class="w-16 h-16 object-cover rounded-lg border border-slate-200 flex-shrink-0">
         <div class="space-y-1">
           <div class="flex items-center gap-2">
+            ${pinBadge}
             <span class="bg-amber-100 text-amber-900 text-[10px] font-bold px-2 py-0.5 rounded">Nota Institucional</span>
             <span class="text-[11px] text-slate-400">${fecha}</span>
           </div>
@@ -467,6 +490,7 @@ function prepararEdicionBitacora(id) {
   document.getElementById('bitacora-resumen').value = item.resumen;
   document.getElementById('bitacora-contenido').value = item.contenido;
   document.getElementById('bitacora-img-existente').value = item.imagen_url;
+  document.getElementById('bitacora-fijado').checked = Boolean(item.fijado);
 
   const previewContainer = document.getElementById('bitacora-preview-container');
   const preview = document.getElementById('bitacora-preview');
@@ -484,6 +508,7 @@ function cancelarEdicionBitacora() {
   document.getElementById('form-bitacora').reset();
   document.getElementById('bitacora-id').value = '';
   document.getElementById('bitacora-img-existente').value = '';
+  document.getElementById('bitacora-fijado').checked = false;
   document.getElementById('bitacora-preview-container').classList.add('hidden');
   document.getElementById('bitacora-fecha').valueAsDate = new Date();
 
@@ -501,11 +526,21 @@ async function guardarBitacora(e) {
   const resumen = document.getElementById('bitacora-resumen').value.trim();
   const contenido = document.getElementById('bitacora-contenido').value.trim();
   const fileInput = document.getElementById('bitacora-file');
+  const fijado = document.getElementById('bitacora-fijado').checked;
   let imagenUrlActual = document.getElementById('bitacora-img-existente').value;
 
   if (!id && fileInput.files.length === 0) {
     mostrarToast('error', 'La fotografía es obligatoria para las entradas de bitácora.');
     return;
+  }
+
+  // Validación de límite de 3 notas fijadas
+  if (fijado) {
+    const fijadasPrevias = listaBitacoraCache.filter(b => b.fijado && b.id !== id).length;
+    if (fijadasPrevias >= 3) {
+      mostrarToast('error', 'Límite alcanzado: Ya existen 3 notas fijadas en bitácora. Desmarca una para fijar esta.');
+      return;
+    }
   }
 
   const btnSubmit = document.getElementById('btn-submit-bitacora');
@@ -530,7 +565,8 @@ async function guardarBitacora(e) {
       fecha_evento: fechaEvento,
       resumen,
       contenido,
-      imagen_url: imagenUrlActual
+      imagen_url: imagenUrlActual,
+      fijado: fijado
     };
 
     if (id) {
@@ -589,7 +625,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const fechaBitacora = document.getElementById('bitacora-fecha');
   if (fechaBitacora) fechaBitacora.valueAsDate = new Date();
 
-  // Control de pestañas (Tabs)
   const tabComunicadosBtn = document.getElementById('tab-comunicados-btn');
   const tabBitacoraBtn = document.getElementById('tab-bitacora-btn');
   const tabComunicados = document.getElementById('tab-comunicados');
@@ -609,7 +644,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     tabComunicadosBtn.className = 'tab-btn pb-3 px-3 text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2 transition font-bold';
   });
 
-  // Previsualización de imágenes
   const fileComunicado = document.getElementById('comunicado-file');
   const previewContainerCom = document.getElementById('comunicado-preview-container');
   const previewCom = document.getElementById('comunicado-preview');
@@ -644,7 +678,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     previewContainerBit.classList.add('hidden');
   });
 
-  // Eventos del Modal de Eliminación
   document.getElementById('btn-cancelar-eliminar').addEventListener('click', cerrarModalEliminar);
   document.getElementById('modal-eliminar-backdrop').addEventListener('click', cerrarModalEliminar);
   
@@ -667,7 +700,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Formularios y botones
   document.getElementById('form-comunicado').addEventListener('submit', guardarComunicado);
   document.getElementById('cancel-edit-comunicado').addEventListener('click', cancelarEdicionComunicado);
   document.getElementById('btn-refresh-comunicados').addEventListener('click', cargarComunicados);
@@ -678,7 +710,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('btn-logout').addEventListener('click', cerrarSesion);
 
-  // Carga inicial
   cargarComunicados();
   cargarBitacora();
 });

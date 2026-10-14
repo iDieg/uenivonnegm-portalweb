@@ -66,9 +66,7 @@ function aplicarZoom(delta) {
   actualizarTransformacionVisor();
 }
 
-// Configuración de interacción (Ratón + Gestos táctiles)
 if (visorCanvas) {
-  // Escritorio (Ratón)
   visorCanvas.addEventListener('mousedown', (e) => {
     if (zoomScale <= 1) return;
     isDragging = true;
@@ -101,7 +99,6 @@ if (visorCanvas) {
     actualizarTransformacionVisor();
   });
 
-  // Móvil (Pantalla Táctil)
   visorCanvas.addEventListener('touchstart', (e) => {
     if (e.touches.length === 1) {
       isDragging = true;
@@ -166,7 +163,6 @@ if (visorBtnReset) visorBtnReset.addEventListener('click', () => {
 });
 if (visorBtnClose) visorBtnClose.addEventListener('click', cerrarVisor);
 
-// Clic en la imagen del modal abre el visor a pantalla completa
 if (modalImgContainer) {
   modalImgContainer.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -174,7 +170,7 @@ if (modalImgContainer) {
   });
 }
 
-// Carga de Comunicados
+// Carga de Comunicados con prioridad a elementos fijados
 async function cargarComunicados() {
   const grid = document.getElementById('comunicados-grid');
 
@@ -182,6 +178,7 @@ async function cargarComunicados() {
     const { data, error } = await supabase
       .from('comunicados')
       .select('*')
+      .order('fijado', { ascending: false })
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -213,11 +210,21 @@ function renderizar(lista) {
 
   lista.forEach(c => {
     const card = document.createElement('article');
-    card.className = 'cursor-pointer bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition duration-200 flex flex-col justify-between group';
+    const borderClass = c.fijado 
+      ? 'border-amber-300 ring-1 ring-amber-200/70 bg-gradient-to-b from-amber-50/20 to-white' 
+      : 'border-slate-200 bg-white';
+
+    card.className = `cursor-pointer ${borderClass} rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition duration-200 flex flex-col justify-between group`;
 
     let badgeClass = 'bg-blue-100 text-blue-900';
     if (c.categoria === 'Primaria') badgeClass = 'bg-emerald-100 text-emerald-800';
     if (c.categoria === 'Media General') badgeClass = 'bg-indigo-100 text-indigo-900';
+
+    const pinBadgeHTML = c.fijado
+      ? `<span class="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+           📌 Fijado
+         </span>`
+      : '';
 
     const fechaFormateada = new Date(c.created_at).toLocaleDateString('es-VE', {
       day: '2-digit', month: 'short', year: 'numeric'
@@ -233,9 +240,12 @@ function renderizar(lista) {
       <div>
         ${imagenHTML}
         <div class="p-5">
-          <div class="flex justify-between items-center mb-2">
-            <span class="${badgeClass} text-[10px] font-bold uppercase px-2 py-0.5 rounded">${c.categoria}</span>
-            <span class="text-[11px] text-slate-400">${fechaFormateada}</span>
+          <div class="flex justify-between items-center mb-2 gap-2">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              ${pinBadgeHTML}
+              <span class="${badgeClass} text-[10px] font-bold uppercase px-2 py-0.5 rounded">${c.categoria}</span>
+            </div>
+            <span class="text-[11px] text-slate-400 shrink-0">${fechaFormateada}</span>
           </div>
           <h3 class="font-bold text-base text-slate-900 mb-2 leading-snug group-hover:text-blue-900 transition line-clamp-2">
             ${c.titulo}
@@ -280,9 +290,10 @@ function abrirModalComunicado(c) {
     if (modalImgContainer) modalImgContainer.classList.add('hidden');
   }
 
-  modalBadge.textContent = c.categoria;
+  modalBadge.textContent = c.fijado ? `📌 Fijado | ${c.categoria}` : c.categoria;
   modalBadge.className = 'text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full ' +
-    (c.categoria === 'Primaria' ? 'bg-emerald-100 text-emerald-800' :
+    (c.fijado ? 'bg-amber-100 text-amber-900 border border-amber-300' :
+     c.categoria === 'Primaria' ? 'bg-emerald-100 text-emerald-800' :
      c.categoria === 'Media General' ? 'bg-indigo-100 text-indigo-900' : 'bg-blue-100 text-blue-900');
 
   modal.classList.remove('hidden');
@@ -314,7 +325,6 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Filtros
 document.querySelectorAll('.filter-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.filter-btn').forEach(b => {
