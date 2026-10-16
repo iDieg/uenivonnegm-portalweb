@@ -8,7 +8,7 @@ Un portal web institucional responsivo diseñado para la Unidad Educativa Nacion
 
 * **Frontend:** HTML5, Tailwind CSS y JavaScript Vanilla.
 * **Backend y Base de Datos:** [Supabase](https://supabase.com/) (Gestión de base de datos y autenticación de usuarios).
-* **Despliegue:** [Vercel](https://supabase.com)
+* **Despliegue:** [Vercel](https://vercel.com)
 
 ## 📂 Estructura Principal del Proyecto
 
