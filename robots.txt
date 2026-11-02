@@ -1,0 +1,12 @@
+# robots.txt para U.E.N. Ivonne González Marcano
+User-agent: *
+Allow: /
+Allow: /index.html
+Allow: /bitacora.html
+Allow: /assets/
+
+Disallow: /admin/
+Disallow: /admin/*
+
+# Ubicación del mapa del sitio
+Sitemap: https://uenivonnegm.vercel.app/sitemap.xml
