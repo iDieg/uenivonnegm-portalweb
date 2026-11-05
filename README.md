@@ -1,7 +1,5 @@
 # Portal Web - U.E.N. Ivonne González Marcano
 
-Un portal web institucional responsivo diseñado para la Unidad Educativa Nacional Ivonne González Marcano. Este sistema proporciona un entorno digital para la comunidad educativa, contando con una vista pública informativa y un panel de administración seguro para la gestión interna.
-
 🌍 **Sitio web en vivo:** [https://uenivonnegm.vercel.app](https://uenivonnegm.vercel.app)
 
 ## 🛠️ Tecnologías Utilizadas
